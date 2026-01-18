@@ -2,9 +2,11 @@ package parser
 
 import (
 	"bytes"
+	"encoding/base64"
 	"io"
 	"mime"
 	"mime/multipart"
+	"mime/quotedprintable"
 	"net/mail"
 	"strings"
 
@@ -47,7 +49,7 @@ func (p *Parser) Parse(r io.Reader) (*entity.Email, error) {
 	if strings.HasPrefix(mediaType, "multipart/") {
 		err = p.parseMultipart(msg.Body, params["boundary"], parsedEmail)
 	} else {
-		err = p.parseSinglePart(msg.Body, mediaType, parsedEmail)
+		err = p.parseSinglePart(msg.Body, mediaType, parsedEmail, msg.Header)
 	}
 
 	return parsedEmail, err
@@ -122,21 +124,23 @@ func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	disposition := part.Header.Get("Content-Disposition")
 	dispType, dispParams, _ := mime.ParseMediaType(disposition)
 
+	encoding := part.Header.Get("Content-Transfer-Encoding")
+
 	// Handle attachments
 	if dispType == "attachment" || dispParams["filename"] != "" {
-		return p.processAttachment(part, msg, dispParams)
+		return p.processAttachment(part, msg, dispParams, encoding)
 	}
 
 	// Handle body content
 	switch mediaType {
 	case "text/plain":
-		content, err := p.decodeContent(part)
+		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
 		msg.TextBody = string(content)
 	case "text/html":
-		content, err := p.decodeContent(part)
+		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
@@ -150,7 +154,7 @@ func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 }
 
 // processAttachment handles file attachments
-func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, params map[string]string) error {
+func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, params map[string]string, encoding string) error {
 	filename := params["filename"]
 	if filename == "" {
 		filename = "attachment"
@@ -160,7 +164,7 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 	filename = p.decodeHeader(filename)
 
 	// Read content into buffer for size calculation
-	content, err := p.decodeContent(part)
+	content, err := p.decodeContent(part, encoding)
 	if err != nil {
 		return err
 	}
@@ -177,8 +181,9 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 }
 
 // parseSinglePart handles non-multipart messages
-func (p *Parser) parseSinglePart(body io.Reader, mediaType string, msg *entity.Email) error {
-	content, err := p.decodeContent(body)
+func (p *Parser) parseSinglePart(body io.Reader, mediaType string, msg *entity.Email, headers mail.Header) error {
+	encoding := headers.Get("Content-Transfer-Encoding")
+	content, err := p.decodeContent(body, encoding)
 	if err != nil {
 		return err
 	}
@@ -196,9 +201,22 @@ func (p *Parser) parseSinglePart(body io.Reader, mediaType string, msg *entity.E
 }
 
 // decodeContent handles content transfer encoding
-func (p *Parser) decodeContent(r io.Reader) ([]byte, error) {
-	// For minimal implementation, assume no encoding or handle common ones
-	return io.ReadAll(r)
+func (p *Parser) decodeContent(r io.Reader, encoding string) ([]byte, error) {
+	encoding = strings.ToLower(strings.TrimSpace(encoding))
+	
+	switch encoding {
+	case "base64":
+		decoder := base64.NewDecoder(base64.StdEncoding, r)
+		return io.ReadAll(decoder)
+	case "quoted-printable":
+		decoder := quotedprintable.NewReader(r)
+		return io.ReadAll(decoder)
+	case "7bit", "8bit", "binary", "":
+		return io.ReadAll(r)
+	default:
+		// Unknown encoding, fallback to raw read
+		return io.ReadAll(r)
+	}
 }
 
 // decodeHeader decodes RFC 2047 encoded headers

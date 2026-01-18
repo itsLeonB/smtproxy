@@ -163,3 +163,79 @@ func TestParser_IsStandardHeader(t *testing.T) {
 	assert.True(t, parser.isStandardHeader("subject"))
 	assert.False(t, parser.isStandardHeader("X-Custom"))
 }
+
+func TestParser_DecodeContent_Base64(t *testing.T) {
+	parser := New(1024)
+	
+	// "Hello World!" in base64
+	encoded := "SGVsbG8gV29ybGQh"
+	content, err := parser.decodeContent(strings.NewReader(encoded), "base64")
+	
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello World!", string(content))
+}
+
+func TestParser_DecodeContent_QuotedPrintable(t *testing.T) {
+	parser := New(1024)
+	
+	// "Hello World!" in quoted-printable
+	encoded := "Hello=20World!"
+	content, err := parser.decodeContent(strings.NewReader(encoded), "quoted-printable")
+	
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello World!", string(content))
+}
+
+func TestParser_DecodeContent_PlainText(t *testing.T) {
+	parser := New(1024)
+	
+	tests := []string{"7bit", "8bit", "binary", ""}
+	
+	for _, encoding := range tests {
+		content, err := parser.decodeContent(strings.NewReader("Hello World!"), encoding)
+		assert.NoError(t, err)
+		assert.Equal(t, "Hello World!", string(content))
+	}
+}
+
+func TestParser_ParseEmailWithBase64Content(t *testing.T) {
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Base64 Test
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+
+SGVsbG8gV29ybGQh`
+
+	parser := New(1024 * 1024)
+	email, err := parser.Parse(strings.NewReader(rawEmail))
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello World!", strings.TrimSpace(email.TextBody))
+}
+
+func TestParser_ParseMultipartWithEncodedParts(t *testing.T) {
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Encoded Multipart Test
+Content-Type: multipart/alternative; boundary="boundary123"
+
+--boundary123
+Content-Type: text/plain
+Content-Transfer-Encoding: base64
+
+SGVsbG8gV29ybGQh
+--boundary123
+Content-Type: text/html
+Content-Transfer-Encoding: quoted-printable
+
+<html><body>Hello=20World!</body></html>
+--boundary123--`
+
+	parser := New(1024 * 1024)
+	email, err := parser.Parse(strings.NewReader(rawEmail))
+
+	assert.NoError(t, err)
+	assert.Equal(t, "Hello World!", strings.TrimSpace(email.TextBody))
+	assert.Equal(t, "<html><body>Hello World!</body></html>", strings.TrimSpace(email.HTMLBody))
+}

@@ -5,7 +5,9 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
+	"github.com/itsLeonB/smtproxy/internal/adapters/providers/brevo"
 	"github.com/itsLeonB/smtproxy/internal/adapters/smtp"
 	"github.com/itsLeonB/smtproxy/internal/core/config"
 	"github.com/itsLeonB/smtproxy/internal/core/logger"
@@ -23,7 +25,26 @@ func main() {
 	
 	// Initialize provider registry
 	registry := provider.NewRegistry()
-	// TODO: Register actual providers based on config
+	
+	// Register Brevo provider if configured
+	if config.Global.BrevoAPIKey != "" {
+		timeout, _ := time.ParseDuration(config.Global.BrevoTimeout)
+		brevoConfig := &brevo.Config{
+			APIKey:  config.Global.BrevoAPIKey,
+			BaseURL: config.Global.BrevoBaseURL,
+			Timeout: timeout,
+		}
+		brevoProvider := brevo.NewProvider(brevoConfig)
+		registry.Register(brevoProvider)
+		logger.Infof("registered Brevo provider")
+	}
+	
+	// Set default provider if specified
+	if config.Global.DefaultProvider != "" {
+		if err := registry.SetDefault(config.Global.DefaultProvider); err != nil {
+			logger.Warnf("failed to set default provider %s: %v", config.Global.DefaultProvider, err)
+		}
+	}
 	
 	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry, logger.Global)
 

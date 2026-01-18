@@ -9,6 +9,7 @@ import (
 	"github.com/itsLeonB/smtproxy/internal/adapters/smtp"
 	"github.com/itsLeonB/smtproxy/internal/core/config"
 	"github.com/itsLeonB/smtproxy/internal/core/logger"
+	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 )
 
 func main() {
@@ -19,7 +20,12 @@ func main() {
 	}
 
 	authUsers := config.Global.AuthUsers
-	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled)
+	
+	// Initialize provider registry
+	registry := provider.NewRegistry()
+	// TODO: Register actual providers based on config
+	
+	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry)
 
 	if err := server.Start(); err != nil {
 		logger.Fatal(err)

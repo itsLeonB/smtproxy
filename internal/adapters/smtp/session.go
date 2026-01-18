@@ -1,12 +1,14 @@
 package smtp
 
 import (
+	"context"
 	"errors"
 	"io"
 
 	"github.com/emersion/go-smtp"
 	"github.com/itsLeonB/smtproxy/internal/domain/entity"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
+	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 )
 
 // Session implements smtp.Session interface
@@ -18,6 +20,7 @@ type Session struct {
 	authEnabled    bool
 	identity       *ClientIdentity
 	parser         *parser.Parser
+	registry       *provider.Registry
 }
 
 // AuthPlain handles AUTH PLAIN authentication
@@ -95,8 +98,13 @@ func (s *Session) Data(r io.Reader) error {
 		return err
 	}
 
-	// TODO: Process parsed email (forward, store, etc.)
-	_ = parsedEmail
+	// Send email via provider
+	if s.registry != nil {
+		_, err = s.registry.Send(context.Background(), parsedEmail, "")
+		if err != nil {
+			return err
+		}
+	}
 
 	return nil
 }

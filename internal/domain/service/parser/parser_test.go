@@ -22,8 +22,11 @@ Hello World!`
 
 	assert.NoError(t, err)
 	assert.NotNil(t, email)
-	assert.Equal(t, "sender@example.com", email.Headers.From)
-	assert.Equal(t, []string{"recipient@example.com"}, email.Headers.To)
+	assert.Equal(t, "sender@example.com", email.Headers.From.Email)
+	assert.Equal(t, "", email.Headers.From.Name)
+	assert.Len(t, email.Headers.To, 1)
+	assert.Equal(t, "recipient@example.com", email.Headers.To[0].Email)
+	assert.Equal(t, "", email.Headers.To[0].Name)
 	assert.Equal(t, "Test Subject", email.Headers.Subject)
 	assert.Equal(t, "Hello World!", email.TextBody)
 	assert.Empty(t, email.HTMLBody)
@@ -70,9 +73,13 @@ Test body`
 	email, err := parser.Parse(strings.NewReader(rawEmail))
 
 	assert.NoError(t, err)
-	assert.Equal(t, `"John Doe" <john@example.com>`, email.Headers.From)
-	assert.Equal(t, []string{"user1@example.com", "user2@example.com"}, email.Headers.To)
-	assert.Equal(t, []string{"cc@example.com"}, email.Headers.CC)
+	assert.Equal(t, "john@example.com", email.Headers.From.Email)
+	assert.Equal(t, "John Doe", email.Headers.From.Name)
+	assert.Len(t, email.Headers.To, 2)
+	assert.Equal(t, "user1@example.com", email.Headers.To[0].Email)
+	assert.Equal(t, "user2@example.com", email.Headers.To[1].Email)
+	assert.Len(t, email.Headers.CC, 1)
+	assert.Equal(t, "cc@example.com", email.Headers.CC[0].Email)
 	assert.Equal(t, "Test Subject", email.Headers.Subject)
 	assert.Equal(t, "<123@example.com>", email.Headers.MessageID)
 	assert.Contains(t, email.Headers.Custom, "X-Custom-Header")
@@ -107,13 +114,40 @@ func TestParser_DecodeHeader(t *testing.T) {
 	assert.Equal(t, "Plain Subject", decoded)
 }
 
+func TestParser_ParseAddress(t *testing.T) {
+	parser := New(1024)
+	
+	tests := []struct {
+		input         string
+		expectedEmail string
+		expectedName  string
+	}{
+		{"ellionblessan@gmail.com", "ellionblessan@gmail.com", ""},
+		{"FOSS Sure <ellionblessan@gmail.com>", "ellionblessan@gmail.com", "FOSS Sure"},
+		{"John Doe <john@example.com>", "john@example.com", "John Doe"},
+		{"<test@example.com>", "test@example.com", ""},
+		{"", "", ""},
+		{"invalid-email", "invalid-email", ""},  // Fallback to original
+	}
+	
+	for _, tt := range tests {
+		result := parser.parseAddress(tt.input)
+		assert.Equal(t, tt.expectedEmail, result.Email, "Failed email for input: %s", tt.input)
+		assert.Equal(t, tt.expectedName, result.Name, "Failed name for input: %s", tt.input)
+	}
+}
+
 func TestParser_ParseAddressList(t *testing.T) {
 	parser := New(1024)
 	
-	addresses := "user1@example.com, user2@example.com"
+	addresses := "user1@example.com, John Doe <user2@example.com>"
 	result := parser.parseAddressList(addresses)
 	
-	assert.Equal(t, []string{"user1@example.com", "user2@example.com"}, result)
+	assert.Len(t, result, 2)
+	assert.Equal(t, "user1@example.com", result[0].Email)
+	assert.Equal(t, "", result[0].Name)
+	assert.Equal(t, "user2@example.com", result[1].Email)
+	assert.Equal(t, "John Doe", result[1].Name)
 }
 
 func TestParser_IsStandardHeader(t *testing.T) {

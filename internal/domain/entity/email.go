@@ -16,10 +16,10 @@ type Email struct {
 
 // Headers contains normalized email headers
 type Headers struct {
-	From        string
-	To          []string
-	CC          []string
-	BCC         []string
+	From        Address
+	To          []Address
+	CC          []Address
+	BCC         []Address
 	Subject     string
 	Date        time.Time
 	MessageID   string

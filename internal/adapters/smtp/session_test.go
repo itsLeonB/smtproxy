@@ -174,7 +174,7 @@ Hello World!`
 	email, err := session.GetParsedEmail(strings.NewReader(rawEmail))
 	assert.NoError(t, err)
 	assert.NotNil(t, email)
-	assert.Equal(t, "sender@example.com", email.Headers.From)
+	assert.Equal(t, "sender@example.com", email.Headers.From.Email)
 	assert.Equal(t, "Test Email", email.Headers.Subject)
 	assert.Equal(t, "Hello World!", email.TextBody)
 }

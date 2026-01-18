@@ -41,8 +41,8 @@ func TestProvider_Send_Success(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "sender@example.com",
-			To:      []string{"recipient@example.com"},
+			From:    entity.Address{Email: "sender@example.com"},
+			To:      []entity.Address{{Email: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 		TextBody: "Test body",
@@ -69,8 +69,8 @@ func TestProvider_Send_BadRequest(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "invalid-email",
-			To:      []string{"recipient@example.com"},
+			From:    entity.Address{Email: "invalid-email"},
+			To:      []entity.Address{{Email: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -96,8 +96,8 @@ func TestProvider_Send_Unauthorized(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "sender@example.com",
-			To:      []string{"recipient@example.com"},
+			From:    entity.Address{Email: "sender@example.com"},
+			To:      []entity.Address{{Email: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -123,8 +123,8 @@ func TestProvider_Send_RateLimit(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "sender@example.com",
-			To:      []string{"recipient@example.com"},
+			From:    entity.Address{Email: "sender@example.com"},
+			To:      []entity.Address{{Email: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -150,8 +150,8 @@ func TestProvider_Send_ServiceUnavailable(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "sender@example.com",
-			To:      []string{"recipient@example.com"},
+			From:    entity.Address{Email: "sender@example.com"},
+			To:      []entity.Address{{Email: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -207,10 +207,13 @@ func TestProvider_BuildRequest(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    "sender@example.com",
-			To:      []string{"recipient1@example.com", "recipient2@example.com"},
-			CC:      []string{"cc@example.com"},
-			BCC:     []string{"bcc@example.com"},
+			From: entity.Address{Email: "ellionblessan@gmail.com", Name: "FOSS Sure"},
+			To: []entity.Address{
+				{Email: "recipient1@example.com", Name: ""},
+				{Email: "recipient2@example.com", Name: "John Doe"},
+			},
+			CC:      []entity.Address{{Email: "cc@example.com", Name: ""}},
+			BCC:     []entity.Address{{Email: "bcc@example.com", Name: "Jane Smith"}},
 			Subject: "Test Subject",
 		},
 		TextBody: "Plain text content",
@@ -220,14 +223,28 @@ func TestProvider_BuildRequest(t *testing.T) {
 	request := provider.buildRequest(email)
 
 	assert.Equal(t, "Test Subject", request.Subject)
-	assert.Equal(t, "sender@example.com", request.Sender.Email)
+
+	// Sender with name and email
+	assert.Equal(t, "ellionblessan@gmail.com", request.Sender.Email)
+	assert.Equal(t, "FOSS Sure", request.Sender.Name)
+
+	// Recipients
 	assert.Len(t, request.To, 2)
 	assert.Equal(t, "recipient1@example.com", request.To[0].Email)
+	assert.Equal(t, "", request.To[0].Name)
 	assert.Equal(t, "recipient2@example.com", request.To[1].Email)
+	assert.Equal(t, "John Doe", request.To[1].Name)
+
+	// CC
 	assert.Len(t, request.CC, 1)
 	assert.Equal(t, "cc@example.com", request.CC[0].Email)
+	assert.Equal(t, "", request.CC[0].Name)
+
+	// BCC with name
 	assert.Len(t, request.BCC, 1)
 	assert.Equal(t, "bcc@example.com", request.BCC[0].Email)
+	assert.Equal(t, "Jane Smith", request.BCC[0].Name)
+
 	assert.Equal(t, "Plain text content", request.TextContent)
 	assert.Equal(t, "<p>HTML content</p>", request.HTMLContent)
 }

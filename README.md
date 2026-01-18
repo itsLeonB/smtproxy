@@ -13,7 +13,7 @@ A production-grade SMTP proxy that converts incoming SMTP messages to transactio
 
 ## Architecture
 
-```
+```text
 SMTP Client → SMTP Server → Email Parser → Dispatcher → Provider API
 ```
 
@@ -209,18 +209,7 @@ go test ./internal/adapters/providers/brevo -v
 
 ### Docker
 
-```dockerfile
-FROM golang:1.25-alpine AS builder
-WORKDIR /app
-COPY . .
-RUN go build -o smtproxy ./cmd/smtp
-
-FROM alpine:latest
-RUN apk --no-cache add ca-certificates
-WORKDIR /root/
-COPY --from=builder /app/smtproxy .
-CMD ["./smtproxy"]
-```
+[via Dockerfile](Dockerfile)
 
 ### Systemd Service
 
@@ -261,27 +250,11 @@ BREVO_TIMEOUT=30s
 
 ### Health Check
 
-The application provides basic health monitoring through logs:
-
-```bash
-# Check if server started successfully
-tail -f /var/log/smtproxy.log | grep "SMTP server started"
-
-# Monitor email dispatch
-tail -f /var/log/smtproxy.log | grep "email dispatched"
-
-# Monitor errors
-tail -f /var/log/smtproxy.log | grep "ERROR"
-```
+TODO:
 
 ### Metrics
 
-Key metrics to monitor:
-- SMTP connections accepted/rejected
-- Authentication success/failure rates
-- Email dispatch success/failure rates
-- Provider API response times
-- Error rates by provider
+TODO:
 
 ## Security
 
@@ -307,61 +280,6 @@ Key metrics to monitor:
 4. Use TLS for SMTP connections in production
 5. Limit message size to prevent abuse
 
-## Troubleshooting
-
-### Common Issues
-
-**SMTP Connection Refused**
-```bash
-# Check if server is running
-netstat -tlnp | grep :2525
-
-# Check logs for startup errors
-tail -f /var/log/smtproxy.log
-```
-
-**Authentication Failed**
-```bash
-# Verify user credentials
-echo -n '\0user1\0pass1' | base64  # Should match AUTH_USERS
-
-# Check authentication logs
-grep "authentication" /var/log/smtproxy.log
-```
-
-**Provider API Errors**
-```bash
-# Check API key configuration
-echo $BREVO_API_KEY
-
-# Test provider health
-curl -H "api-key: $BREVO_API_KEY" https://api.brevo.com/v3/account
-```
-
-### Debug Mode
-
-Enable debug logging for detailed troubleshooting:
-
-```bash
-LOG_LEVEL=debug ./bin/smtproxy
-```
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new functionality
-4. Ensure all tests pass
-5. Submit a pull request
-
-### Code Style
-
-- Follow Go conventions
-- Add comprehensive tests
-- Document public APIs
-- Use structured logging
-- Handle errors gracefully
-
 ## License
 
 MIT License - see [LICENSE](LICENSE) file for details.
@@ -370,4 +288,3 @@ MIT License - see [LICENSE](LICENSE) file for details.
 
 - GitHub Issues: [Report bugs or request features](https://github.com/itsLeonB/smtproxy/issues)
 - Documentation: This README and inline code comments
-- Examples: See `examples/` directory for usage examples

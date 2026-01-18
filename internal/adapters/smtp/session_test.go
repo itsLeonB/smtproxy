@@ -221,6 +221,35 @@ func TestSession_Reset(t *testing.T) {
 	assert.Nil(t, session.to)
 }
 
+func TestSession_Data_ResetsStateAfterSuccess(t *testing.T) {
+	session := &Session{
+		from:           "sender@example.com",
+		to:             []string{"recipient@example.com"},
+		maxMessageSize: 1024,
+		authEnabled:    false,
+		parser:         parser.New(1024),
+		dispatcher:     nil, // No dispatcher for this test
+	}
+
+	// Verify initial state
+	assert.Equal(t, "sender@example.com", session.from)
+	assert.Equal(t, []string{"recipient@example.com"}, session.to)
+
+	// Call Data method with valid email
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Test Email
+
+Hello World!`
+	
+	err := session.Data(strings.NewReader(rawEmail))
+
+	// Verify success and state reset
+	assert.NoError(t, err)
+	assert.Empty(t, session.from)
+	assert.Nil(t, session.to)
+}
+
 func TestSession_Logout(t *testing.T) {
 	session := &Session{}
 	err := session.Logout()

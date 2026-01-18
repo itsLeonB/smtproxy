@@ -110,6 +110,8 @@ func (s *Session) Data(r io.Reader) error {
 		}
 	}
 
+	// Reset session state after successful processing
+	s.Reset()
 	return nil
 }
 

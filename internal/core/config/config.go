@@ -11,7 +11,7 @@ type Config struct {
 	SMTPPort         string            `envconfig:"SMTP_PORT" default:"2525"`
 	MaxSize          int64             `envconfig:"MAX_MESSAGE_SIZE" default:"10485760"` // 10MB
 	AuthEnabled      bool              `envconfig:"AUTH_ENABLED" default:"true"`
-	AuthUsers        map[string]string `envconfig:"AUTH_USERS" default:"user1:pass1,user2:pass2"`
+	AuthUsers        map[string]string `envconfig:"AUTH_USERS"`
 	DefaultProvider  string            `envconfig:"DEFAULT_PROVIDER" default:"brevo"`
 	EnabledProviders string            `envconfig:"ENABLED_PROVIDERS" default:"brevo"`
 

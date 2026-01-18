@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/itsLeonB/ezutil/v2"
+	"github.com/itsLeonB/smtproxy/internal/core/logger"
 	"github.com/itsLeonB/smtproxy/internal/domain/entity"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 )
@@ -12,14 +12,12 @@ import (
 // Dispatcher handles the core email dispatch flow
 type Dispatcher struct {
 	registry *provider.Registry
-	logger   ezutil.Logger
 }
 
 // NewDispatcher creates a new email dispatcher
-func NewDispatcher(registry *provider.Registry, logger ezutil.Logger) *Dispatcher {
+func NewDispatcher(registry *provider.Registry) *Dispatcher {
 	return &Dispatcher{
 		registry: registry,
-		logger:   logger,
 	}
 }
 
@@ -27,21 +25,21 @@ func NewDispatcher(registry *provider.Registry, logger ezutil.Logger) *Dispatche
 func (d *Dispatcher) Dispatch(ctx context.Context, email *entity.Email, providerName string) error {
 	// Log send attempt
 	if providerName != "" {
-		d.logger.Infof("dispatching email to provider: %s", providerName)
+		logger.Infof("dispatching email to provider: %s", providerName)
 	} else {
-		d.logger.Info("dispatching email to default provider")
+		logger.Info("dispatching email to default provider")
 	}
 
 	// Send via registry
 	result, err := d.registry.Send(ctx, email, providerName)
-	
+
 	// Log result
 	if err != nil {
-		d.logger.Errorf("email dispatch failed - provider: %s, error: %v", result.ProviderName, err)
+		logger.Errorf("email dispatch failed - provider: %s, error: %v", result.ProviderName, err)
 		return d.translateError(err)
 	}
-	
-	d.logger.Infof("email dispatched successfully - provider: %s", result.ProviderName)
+
+	logger.Infof("email dispatched successfully - provider: %s", result.ProviderName)
 	return nil
 }
 
@@ -53,7 +51,7 @@ func (d *Dispatcher) translateError(err error) error {
 
 	// Map common provider errors to SMTP-friendly messages
 	errMsg := err.Error()
-	
+
 	switch {
 	case contains(errMsg, "authentication", "unauthorized", "invalid key", "forbidden"):
 		return fmt.Errorf("550 Authentication failed")

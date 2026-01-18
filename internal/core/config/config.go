@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -14,9 +16,9 @@ type Config struct {
 	EnabledProviders string            `envconfig:"ENABLED_PROVIDERS" default:"brevo"`
 
 	// Brevo configuration
-	BrevoAPIKey  string `envconfig:"BREVO_API_KEY"`
-	BrevoBaseURL string `envconfig:"BREVO_BASE_URL" default:"https://api.brevo.com/v3"`
-	BrevoTimeout string `envconfig:"BREVO_TIMEOUT" default:"30s"`
+	BrevoAPIKey  string        `envconfig:"BREVO_API_KEY"`
+	BrevoBaseURL string        `envconfig:"BREVO_BASE_URL" default:"https://api.brevo.com/v3"`
+	BrevoTimeout time.Duration `envconfig:"BREVO_TIMEOUT" default:"30s"`
 }
 
 var Global *Config

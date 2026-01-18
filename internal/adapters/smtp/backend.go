@@ -2,7 +2,6 @@ package smtp
 
 import (
 	"github.com/emersion/go-smtp"
-	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/dispatcher"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
@@ -17,12 +16,12 @@ type Backend struct {
 }
 
 // NewBackend creates a new SMTP backend
-func NewBackend(maxMessageSize int64, authHandler *AuthHandler, authEnabled bool, registry *provider.Registry, logger ezutil.Logger) *Backend {
+func NewBackend(maxMessageSize int64, authHandler *AuthHandler, authEnabled bool, registry *provider.Registry) *Backend {
 	var disp *dispatcher.Dispatcher
 	if registry != nil {
-		disp = dispatcher.NewDispatcher(registry, logger)
+		disp = dispatcher.NewDispatcher(registry)
 	}
-	
+
 	return &Backend{
 		maxMessageSize: maxMessageSize,
 		authHandler:    authHandler,
@@ -51,11 +50,11 @@ func (b *Backend) AuthPlain(conn *smtp.Conn, username, password string) (smtp.Se
 		parser:         parser.New(b.maxMessageSize),
 		dispatcher:     b.dispatcher,
 	}
-	
+
 	if err := session.AuthPlain(username, password); err != nil {
 		return nil, err
 	}
-	
+
 	return session, nil
 }
 
@@ -68,10 +67,10 @@ func (b *Backend) AuthLogin(conn *smtp.Conn, username, password string) (smtp.Se
 		parser:         parser.New(b.maxMessageSize),
 		dispatcher:     b.dispatcher,
 	}
-	
+
 	if err := session.AuthLogin(username, password); err != nil {
 		return nil, err
 	}
-	
+
 	return session, nil
 }

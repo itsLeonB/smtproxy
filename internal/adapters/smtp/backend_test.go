@@ -3,7 +3,6 @@ package smtp
 import (
 	"testing"
 
-	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 	"github.com/stretchr/testify/assert"
 )
@@ -13,10 +12,9 @@ func TestNewBackend(t *testing.T) {
 	users := map[string]string{"user": "pass"}
 	authHandler := NewAuthHandler(users)
 	registry := provider.NewRegistry()
-	logger := ezutil.NewSimpleLogger("test", false, 1)
-	
-	backend := NewBackend(maxSize, authHandler, true, registry, logger)
-	
+
+	backend := NewBackend(maxSize, authHandler, true, registry)
+
 	assert.NotNil(t, backend)
 	assert.Equal(t, maxSize, backend.maxMessageSize)
 	assert.Equal(t, authHandler, backend.authHandler)
@@ -25,9 +23,9 @@ func TestNewBackend(t *testing.T) {
 }
 
 func TestBackend_NewSession(t *testing.T) {
-	backend := NewBackend(1024, nil, false, nil, nil)
+	backend := NewBackend(1024, nil, false, nil)
 	session, err := backend.NewSession(nil)
-	
+
 	assert.NoError(t, err)
 	assert.NotNil(t, session)
 	assert.IsType(t, &Session{}, session)

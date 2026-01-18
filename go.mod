@@ -6,6 +6,7 @@ require (
 	github.com/emersion/go-smtp v0.24.0
 	github.com/itsLeonB/ezutil/v2 v2.2.1
 	github.com/itsLeonB/ungerr v0.2.0
+	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/stretchr/testify v1.11.1
 )

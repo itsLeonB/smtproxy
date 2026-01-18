@@ -14,6 +14,8 @@ github.com/itsLeonB/ezutil/v2 v2.2.1 h1:hXjLOTrZoD1BYkd/jYErx+cSwrwrW7ay6TX0UozM
 github.com/itsLeonB/ezutil/v2 v2.2.1/go.mod h1:b1L2eUJtM5z5Kf+zXVPoVtSpjCBLt4CUDVhGQWz0bsI=
 github.com/itsLeonB/ungerr v0.2.0 h1:+IMzMcgWuywsnASGzzWamqHdgNxZPYMOg4SoZ61XA0I=
 github.com/itsLeonB/ungerr v0.2.0/go.mod h1:CGA9XktVW4iE5afcM/qZxHG/iVUUEPg3hklBvZnfrGg=
+github.com/joho/godotenv v1.5.1 h1:7eLL/+HRGLY0ldzfGMeQkb7vMd0as4CfYvUVzLqw0N0=
+github.com/joho/godotenv v1.5.1/go.mod h1:f4LDr5Voq0i2e/R5DDNOoa2zzDfwtkZa6DnEwAbqwq4=
 github.com/kelseyhightower/envconfig v1.4.0 h1:Im6hONhd3pLkfDFsbRgu68RDNkGF1r3dvMUtDTo2cv8=
 github.com/kelseyhightower/envconfig v1.4.0/go.mod h1:cccZRl6mQpaq41TPp5QxidR+Sa3axMbJDNb//FQX6Gg=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=

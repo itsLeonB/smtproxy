@@ -12,6 +12,7 @@ import (
 	"github.com/itsLeonB/smtproxy/internal/core/config"
 	"github.com/itsLeonB/smtproxy/internal/core/logger"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
+	_ "github.com/joho/godotenv/autoload"
 )
 
 func main() {

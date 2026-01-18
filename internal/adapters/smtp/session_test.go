@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -74,6 +75,7 @@ func TestSession_Data_WithAuth(t *testing.T) {
 		maxMessageSize: 1024,
 		authEnabled:    true,
 		identity:       NewClientIdentity("testuser"),
+		parser:         parser.New(1024),
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")
@@ -87,6 +89,7 @@ func TestSession_Data_NoAuth(t *testing.T) {
 		to:             []string{"recipient@example.com"},
 		maxMessageSize: 1024,
 		authEnabled:    true,
+		parser:         parser.New(1024),
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")
@@ -126,18 +129,42 @@ func TestSession_Rcpt(t *testing.T) {
 	assert.Contains(t, session.to, "user2@example.com")
 }
 
-func TestSession_Data_Success(t *testing.T) {
+func TestSession_Data_WithEmailParsing(t *testing.T) {
 	session := &Session{
 		from:           "sender@example.com",
 		to:             []string{"recipient@example.com"},
 		maxMessageSize: 1024,
 		authEnabled:    false,
+		parser:         parser.New(1024),
 	}
 	
-	message := strings.NewReader("Subject: Test\n\nHello World")
-	err := session.Data(message)
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Test Email
+
+Hello World!`
 	
+	err := session.Data(strings.NewReader(rawEmail))
 	assert.NoError(t, err)
+}
+
+func TestSession_GetParsedEmail(t *testing.T) {
+	session := &Session{
+		parser: parser.New(1024),
+	}
+	
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Test Email
+
+Hello World!`
+	
+	email, err := session.GetParsedEmail(strings.NewReader(rawEmail))
+	assert.NoError(t, err)
+	assert.NotNil(t, email)
+	assert.Equal(t, "sender@example.com", email.Headers.From)
+	assert.Equal(t, "Test Email", email.Headers.Subject)
+	assert.Equal(t, "Hello World!", email.TextBody)
 }
 
 func TestSession_Data_NoSender(t *testing.T) {
@@ -145,6 +172,7 @@ func TestSession_Data_NoSender(t *testing.T) {
 		to:             []string{"recipient@example.com"},
 		maxMessageSize: 1024,
 		authEnabled:    false,
+		parser:         parser.New(1024),
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")
@@ -159,6 +187,7 @@ func TestSession_Data_NoRecipients(t *testing.T) {
 		from:           "sender@example.com",
 		maxMessageSize: 1024,
 		authEnabled:    false,
+		parser:         parser.New(1024),
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")

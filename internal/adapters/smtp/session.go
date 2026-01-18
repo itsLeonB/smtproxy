@@ -5,6 +5,8 @@ import (
 	"io"
 
 	"github.com/emersion/go-smtp"
+	"github.com/itsLeonB/smtproxy/internal/domain/entity"
+	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
 )
 
 // Session implements smtp.Session interface
@@ -15,6 +17,7 @@ type Session struct {
 	authHandler    *AuthHandler
 	authEnabled    bool
 	identity       *ClientIdentity
+	parser         *parser.Parser
 }
 
 // AuthPlain handles AUTH PLAIN authentication
@@ -86,12 +89,14 @@ func (s *Session) Data(r io.Reader) error {
 		return errors.New("no recipients specified")
 	}
 
-	// Read message with size limit
-	lr := io.LimitReader(r, s.maxMessageSize)
-	_, err := io.ReadAll(lr)
+	// Parse email using the MIME parser
+	parsedEmail, err := s.parser.Parse(r)
 	if err != nil {
 		return err
 	}
+
+	// TODO: Process parsed email (forward, store, etc.)
+	_ = parsedEmail
 
 	return nil
 }
@@ -110,4 +115,9 @@ func (s *Session) Logout() error {
 // GetIdentity returns the client identity
 func (s *Session) GetIdentity() *ClientIdentity {
 	return s.identity
+}
+
+// GetParsedEmail returns the last parsed email (for testing)
+func (s *Session) GetParsedEmail(r io.Reader) (*entity.Email, error) {
+	return s.parser.Parse(r)
 }

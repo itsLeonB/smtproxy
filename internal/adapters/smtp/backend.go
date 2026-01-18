@@ -2,6 +2,7 @@ package smtp
 
 import (
 	"github.com/emersion/go-smtp"
+	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
 )
 
 // Backend implements smtp.Backend interface
@@ -26,5 +27,6 @@ func (b *Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 		maxMessageSize: b.maxMessageSize,
 		authHandler:    b.authHandler,
 		authEnabled:    b.authEnabled,
+		parser:         parser.New(b.maxMessageSize),
 	}, nil
 }

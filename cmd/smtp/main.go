@@ -25,7 +25,7 @@ func main() {
 	registry := provider.NewRegistry()
 	// TODO: Register actual providers based on config
 	
-	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry)
+	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry, logger.Global)
 
 	if err := server.Start(); err != nil {
 		logger.Fatal(err)

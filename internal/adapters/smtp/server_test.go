@@ -3,6 +3,7 @@ package smtp
 import (
 	"testing"
 
+	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,8 +13,9 @@ func TestNewServer(t *testing.T) {
 	maxSize := int64(1024)
 	authUsers := map[string]string{"user": "pass"}
 	registry := provider.NewRegistry()
+	logger := ezutil.NewSimpleLogger("test", false, 1)
 	
-	server := NewServer(addr, maxSize, authUsers, true, registry)
+	server := NewServer(addr, maxSize, authUsers, true, registry, logger)
 	
 	assert.NotNil(t, server)
 	assert.Equal(t, addr, server.addr)
@@ -28,14 +30,14 @@ func TestNewServer_NoAuth(t *testing.T) {
 	addr := ":2525"
 	maxSize := int64(1024)
 	
-	server := NewServer(addr, maxSize, nil, false, nil)
+	server := NewServer(addr, maxSize, nil, false, nil, nil)
 	
 	assert.NotNil(t, server)
 	assert.Equal(t, addr, server.addr)
 }
 
 func TestServer_StartAndShutdown(t *testing.T) {
-	server := NewServer(":0", 1024, nil, false, nil) // Use port 0 for random available port
+	server := NewServer(":0", 1024, nil, false, nil, nil) // Use port 0 for random available port
 	
 	err := server.Start()
 	assert.NoError(t, err)

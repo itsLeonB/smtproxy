@@ -6,6 +6,7 @@ import (
 	"net"
 
 	"github.com/emersion/go-smtp"
+	"github.com/itsLeonB/ezutil/v2"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 )
 
@@ -16,13 +17,13 @@ type Server struct {
 }
 
 // NewServer creates a new SMTP server
-func NewServer(addr string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, registry *provider.Registry) *Server {
+func NewServer(addr string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, registry *provider.Registry, logger ezutil.Logger) *Server {
 	var authHandler *AuthHandler
 	if authEnabled && len(authUsers) > 0 {
 		authHandler = NewAuthHandler(authUsers)
 	}
 	
-	backend := NewBackend(maxMessageSize, authHandler, authEnabled, registry)
+	backend := NewBackend(maxMessageSize, authHandler, authEnabled, registry, logger)
 	
 	s := smtp.NewServer(backend)
 	s.Addr = addr

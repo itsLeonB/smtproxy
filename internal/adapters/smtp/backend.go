@@ -2,6 +2,8 @@ package smtp
 
 import (
 	"github.com/emersion/go-smtp"
+	"github.com/itsLeonB/ezutil/v2"
+	"github.com/itsLeonB/smtproxy/internal/domain/service/dispatcher"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/provider"
 )
@@ -11,16 +13,21 @@ type Backend struct {
 	maxMessageSize int64
 	authHandler    *AuthHandler
 	authEnabled    bool
-	registry       *provider.Registry
+	dispatcher     *dispatcher.Dispatcher
 }
 
 // NewBackend creates a new SMTP backend
-func NewBackend(maxMessageSize int64, authHandler *AuthHandler, authEnabled bool, registry *provider.Registry) *Backend {
+func NewBackend(maxMessageSize int64, authHandler *AuthHandler, authEnabled bool, registry *provider.Registry, logger ezutil.Logger) *Backend {
+	var disp *dispatcher.Dispatcher
+	if registry != nil {
+		disp = dispatcher.NewDispatcher(registry, logger)
+	}
+	
 	return &Backend{
 		maxMessageSize: maxMessageSize,
 		authHandler:    authHandler,
 		authEnabled:    authEnabled,
-		registry:       registry,
+		dispatcher:     disp,
 	}
 }
 
@@ -31,6 +38,6 @@ func (b *Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 		authHandler:    b.authHandler,
 		authEnabled:    b.authEnabled,
 		parser:         parser.New(b.maxMessageSize),
-		registry:       b.registry,
+		dispatcher:     b.dispatcher,
 	}, nil
 }

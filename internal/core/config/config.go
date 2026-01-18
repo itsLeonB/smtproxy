@@ -1,7 +1,6 @@
 package config
 
 import (
-	"github.com/itsLeonB/ungerr"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -25,7 +24,7 @@ var Global *Config
 func Load() error {
 	var cfg Config
 	if err := envconfig.Process("", &cfg); err != nil {
-		return ungerr.Wrap(err, "error loading env vars")
+		return err
 	}
 	Global = &cfg
 	return nil

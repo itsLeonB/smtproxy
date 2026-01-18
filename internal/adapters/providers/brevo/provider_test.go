@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"net/mail"
 	"strings"
 	"testing"
 	"time"
@@ -41,8 +42,8 @@ func TestProvider_Send_Success(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    entity.Address{Email: "sender@example.com"},
-			To:      []entity.Address{{Email: "recipient@example.com"}},
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 		TextBody: "Test body",
@@ -69,8 +70,8 @@ func TestProvider_Send_BadRequest(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    entity.Address{Email: "invalid-email"},
-			To:      []entity.Address{{Email: "recipient@example.com"}},
+			From:    &mail.Address{Address: "invalid-email"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -96,8 +97,8 @@ func TestProvider_Send_Unauthorized(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    entity.Address{Email: "sender@example.com"},
-			To:      []entity.Address{{Email: "recipient@example.com"}},
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -123,8 +124,8 @@ func TestProvider_Send_RateLimit(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    entity.Address{Email: "sender@example.com"},
-			To:      []entity.Address{{Email: "recipient@example.com"}},
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -150,8 +151,8 @@ func TestProvider_Send_ServiceUnavailable(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From:    entity.Address{Email: "sender@example.com"},
-			To:      []entity.Address{{Email: "recipient@example.com"}},
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
 			Subject: "Test Subject",
 		},
 	}
@@ -207,13 +208,13 @@ func TestProvider_BuildRequest(t *testing.T) {
 
 	email := &entity.Email{
 		Headers: entity.Headers{
-			From: entity.Address{Email: "ellionblessan@gmail.com", Name: "FOSS Sure"},
-			To: []entity.Address{
-				{Email: "recipient1@example.com", Name: ""},
-				{Email: "recipient2@example.com", Name: "John Doe"},
+			From: &mail.Address{Address: "ellionblessan@gmail.com", Name: "FOSS Sure"},
+			To: []*mail.Address{
+				{Address: "recipient1@example.com", Name: ""},
+				{Address: "recipient2@example.com", Name: "John Doe"},
 			},
-			CC:      []entity.Address{{Email: "cc@example.com", Name: ""}},
-			BCC:     []entity.Address{{Email: "bcc@example.com", Name: "Jane Smith"}},
+			CC:      []*mail.Address{{Address: "cc@example.com", Name: ""}},
+			BCC:     []*mail.Address{{Address: "bcc@example.com", Name: "Jane Smith"}},
 			Subject: "Test Subject",
 		},
 		TextBody: "Plain text content",

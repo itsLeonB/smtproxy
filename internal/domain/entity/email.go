@@ -2,6 +2,7 @@ package entity
 
 import (
 	"io"
+	"net/mail"
 	"time"
 )
 
@@ -16,10 +17,10 @@ type Email struct {
 
 // Headers contains normalized email headers
 type Headers struct {
-	From        Address
-	To          []Address
-	CC          []Address
-	BCC         []Address
+	From        *mail.Address
+	To          []*mail.Address
+	CC          []*mail.Address
+	BCC         []*mail.Address
 	Subject     string
 	Date        time.Time
 	MessageID   string
@@ -33,10 +34,4 @@ type Attachment struct {
 	ContentType string
 	Size        int64
 	Content     io.Reader
-}
-
-// Address represents an email address with optional display name
-type Address struct {
-	Email string
-	Name  string
 }

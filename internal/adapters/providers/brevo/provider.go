@@ -114,36 +114,36 @@ func (p *Provider) buildRequest(email *entity.Email) *SendRequest {
 	}
 
 	// Set sender
-	if email.Headers.From.Email != "" {
+	if email.Headers.From != nil && email.Headers.From.Address != "" {
 		request.Sender = Contact{
-			Email: email.Headers.From.Email,
+			Email: email.Headers.From.Address,
 			Name:  email.Headers.From.Name,
 		}
 	}
 
 	// Set recipients
 	for _, to := range email.Headers.To {
-		if to.Email != "" {
+		if to != nil && to.Address != "" {
 			request.To = append(request.To, Contact{
-				Email: to.Email,
+				Email: to.Address,
 				Name:  to.Name,
 			})
 		}
 	}
 
 	for _, cc := range email.Headers.CC {
-		if cc.Email != "" {
+		if cc != nil && cc.Address != "" {
 			request.CC = append(request.CC, Contact{
-				Email: cc.Email,
+				Email: cc.Address,
 				Name:  cc.Name,
 			})
 		}
 	}
 
 	for _, bcc := range email.Headers.BCC {
-		if bcc.Email != "" {
+		if bcc != nil && bcc.Address != "" {
 			request.BCC = append(request.BCC, Contact{
-				Email: bcc.Email,
+				Email: bcc.Address,
 				Name:  bcc.Name,
 			})
 		}

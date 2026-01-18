@@ -212,26 +212,23 @@ func (p *Parser) decodeHeader(header string) string {
 }
 
 // parseAddress parses a single email address
-func (p *Parser) parseAddress(address string) entity.Address {
+func (p *Parser) parseAddress(address string) *mail.Address {
 	if address == "" {
-		return entity.Address{}
+		return nil
 	}
 
 	if addr, err := mail.ParseAddress(address); err == nil {
-		return entity.Address{
-			Email: addr.Address,
-			Name:  addr.Name,
-		}
+		return addr
 	}
 
 	// Fallback to plain email
-	return entity.Address{
-		Email: strings.TrimSpace(address),
+	return &mail.Address{
+		Address: strings.TrimSpace(address),
 	}
 }
 
 // parseAddressList parses comma-separated email addresses
-func (p *Parser) parseAddressList(addresses string) []entity.Address {
+func (p *Parser) parseAddressList(addresses string) []*mail.Address {
 	if addresses == "" {
 		return nil
 	}
@@ -240,23 +237,16 @@ func (p *Parser) parseAddressList(addresses string) []entity.Address {
 	if err != nil {
 		// Fallback to simple split if parsing fails
 		parts := strings.Split(addresses, ",")
-		result := make([]entity.Address, 0, len(parts))
+		result := make([]*mail.Address, 0, len(parts))
 		for _, part := range parts {
-			if addr := p.parseAddress(strings.TrimSpace(part)); addr.Email != "" {
+			if addr := p.parseAddress(strings.TrimSpace(part)); addr != nil && addr.Address != "" {
 				result = append(result, addr)
 			}
 		}
 		return result
 	}
 
-	result := make([]entity.Address, len(addrs))
-	for i, addr := range addrs {
-		result[i] = entity.Address{
-			Email: addr.Address,
-			Name:  addr.Name,
-		}
-	}
-	return result
+	return addrs
 }
 
 // isStandardHeader checks if header is a standard email header

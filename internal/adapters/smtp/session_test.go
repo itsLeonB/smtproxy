@@ -1,6 +1,7 @@
 package smtp
 
 import (
+	"io"
 	"strings"
 	"testing"
 
@@ -255,4 +256,70 @@ func TestSession_Logout(t *testing.T) {
 	err := session.Logout()
 	
 	assert.NoError(t, err)
+}
+
+func TestSession_Data_MessageSizeExceeded(t *testing.T) {
+	session := &Session{
+		from:           "sender@example.com",
+		to:             []string{"recipient@example.com"},
+		maxMessageSize: 50, // Very small limit for testing
+		authEnabled:    false,
+		parser:         parser.New(1024),
+	}
+
+	// Create a message larger than the limit
+	largeMessage := `From: sender@example.com
+To: recipient@example.com
+Subject: Large Message Test
+
+` + strings.Repeat("This is a very long message body that exceeds the size limit. ", 10)
+
+	err := session.Data(strings.NewReader(largeMessage))
+	
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "message size exceeds maximum allowed size of 50 bytes")
+}
+
+func TestSession_Data_MessageSizeWithinLimit(t *testing.T) {
+	session := &Session{
+		from:           "sender@example.com",
+		to:             []string{"recipient@example.com"},
+		maxMessageSize: 1024, // Generous limit
+		authEnabled:    false,
+		parser:         parser.New(1024),
+	}
+
+	smallMessage := `From: sender@example.com
+To: recipient@example.com
+Subject: Small Message
+
+Hello World!`
+
+	err := session.Data(strings.NewReader(smallMessage))
+	
+	assert.NoError(t, err)
+}
+
+func TestSizeLimitReader(t *testing.T) {
+	// Test reading within limit
+	content := "Hello World!"
+	reader := &sizeLimitReader{
+		reader:  strings.NewReader(content),
+		maxSize: 20,
+	}
+	
+	data, err := io.ReadAll(reader)
+	assert.NoError(t, err)
+	assert.Equal(t, content, string(data))
+	
+	// Test reading beyond limit
+	longContent := strings.Repeat("A", 100)
+	reader = &sizeLimitReader{
+		reader:  strings.NewReader(longContent),
+		maxSize: 10,
+	}
+	
+	_, err = io.ReadAll(reader)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "message size exceeds maximum allowed size of 10 bytes")
 }

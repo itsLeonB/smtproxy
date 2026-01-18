@@ -3,6 +3,7 @@ package smtp
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 
 	"github.com/emersion/go-smtp"
@@ -96,8 +97,15 @@ func (s *Session) Data(r io.Reader) error {
 		return errors.New("no recipients specified")
 	}
 
+	// Validate message size
+	limitedReader := &sizeLimitReader{
+		reader:   r,
+		maxSize:  s.maxMessageSize,
+		bytesRead: 0,
+	}
+
 	// Parse email using the MIME parser
-	parsedEmail, err := s.parser.Parse(r)
+	parsedEmail, err := s.parser.Parse(limitedReader)
 	if err != nil {
 		return err
 	}
@@ -134,4 +142,33 @@ func (s *Session) GetIdentity() *ClientIdentity {
 // GetParsedEmail returns the last parsed email (for testing)
 func (s *Session) GetParsedEmail(r io.Reader) (*entity.Email, error) {
 	return s.parser.Parse(r)
+}
+
+// sizeLimitReader wraps an io.Reader and enforces a size limit
+type sizeLimitReader struct {
+	reader    io.Reader
+	maxSize   int64
+	bytesRead int64
+}
+
+func (r *sizeLimitReader) Read(p []byte) (n int, err error) {
+	if r.bytesRead >= r.maxSize {
+		return 0, fmt.Errorf("message size exceeds maximum allowed size of %d bytes", r.maxSize)
+	}
+
+	// Limit the read to not exceed maxSize
+	remaining := r.maxSize - r.bytesRead
+	if int64(len(p)) > remaining {
+		p = p[:remaining]
+	}
+
+	n, err = r.reader.Read(p)
+	r.bytesRead += int64(n)
+
+	// Check if we've exceeded the limit after reading
+	if r.bytesRead > r.maxSize {
+		return n, fmt.Errorf("message size exceeds maximum allowed size of %d bytes", r.maxSize)
+	}
+
+	return n, err
 }

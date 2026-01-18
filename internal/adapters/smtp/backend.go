@@ -41,3 +41,37 @@ func (b *Backend) NewSession(c *smtp.Conn) (smtp.Session, error) {
 		dispatcher:     b.dispatcher,
 	}, nil
 }
+
+// AuthPlain implements SMTP AUTH PLAIN for the backend
+func (b *Backend) AuthPlain(conn *smtp.Conn, username, password string) (smtp.Session, error) {
+	session := &Session{
+		maxMessageSize: b.maxMessageSize,
+		authHandler:    b.authHandler,
+		authEnabled:    b.authEnabled,
+		parser:         parser.New(b.maxMessageSize),
+		dispatcher:     b.dispatcher,
+	}
+	
+	if err := session.AuthPlain(username, password); err != nil {
+		return nil, err
+	}
+	
+	return session, nil
+}
+
+// AuthLogin implements SMTP AUTH LOGIN for the backend
+func (b *Backend) AuthLogin(conn *smtp.Conn, username, password string) (smtp.Session, error) {
+	session := &Session{
+		maxMessageSize: b.maxMessageSize,
+		authHandler:    b.authHandler,
+		authEnabled:    b.authEnabled,
+		parser:         parser.New(b.maxMessageSize),
+		dispatcher:     b.dispatcher,
+	}
+	
+	if err := session.AuthLogin(username, password); err != nil {
+		return nil, err
+	}
+	
+	return session, nil
+}

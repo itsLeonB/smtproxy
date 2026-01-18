@@ -2,6 +2,8 @@ package brevo
 
 import (
 	"context"
+	"encoding/base64"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/mail"
@@ -275,4 +277,152 @@ func TestProvider_MapError(t *testing.T) {
 		assert.Error(t, err)
 		assert.True(t, strings.Contains(strings.ToLower(err.Error()), tt.expected))
 	}
+}
+
+func TestProvider_BuildRequest_WithAttachments(t *testing.T) {
+	config := &Config{APIKey: "test-key"}
+	provider := NewProvider(config)
+
+	email := &entity.Email{
+		Headers: entity.Headers{
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
+			Subject: "Test with attachments",
+		},
+		TextBody: "Email with attachments",
+		Attachments: []entity.Attachment{
+			{
+				Filename:    "test.txt",
+				ContentType: "text/plain",
+				Size:        11,
+				Content:     strings.NewReader("Hello World"),
+			},
+			{
+				Filename:    "data.json",
+				ContentType: "application/json",
+				Size:        13,
+				Content:     strings.NewReader(`{"key":"value"}`),
+			},
+		},
+	}
+
+	request := provider.buildRequest(email)
+
+	assert.Len(t, request.Attachments, 2)
+	
+	// First attachment
+	assert.Equal(t, "test.txt", request.Attachments[0].Name)
+	expectedContent1 := base64.StdEncoding.EncodeToString([]byte("Hello World"))
+	assert.Equal(t, expectedContent1, request.Attachments[0].Content)
+	
+	// Second attachment
+	assert.Equal(t, "data.json", request.Attachments[1].Name)
+	expectedContent2 := base64.StdEncoding.EncodeToString([]byte(`{"key":"value"}`))
+	assert.Equal(t, expectedContent2, request.Attachments[1].Content)
+}
+
+func TestProvider_BuildRequest_EmptyAttachments(t *testing.T) {
+	config := &Config{APIKey: "test-key"}
+	provider := NewProvider(config)
+
+	email := &entity.Email{
+		Headers: entity.Headers{
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
+			Subject: "Test without attachments",
+		},
+		TextBody:    "Email without attachments",
+		Attachments: []entity.Attachment{},
+	}
+
+	request := provider.buildRequest(email)
+	assert.Empty(t, request.Attachments)
+}
+
+type errorReader struct{}
+
+func (e errorReader) Read(p []byte) (n int, err error) {
+	return 0, io.ErrUnexpectedEOF
+}
+
+func TestProvider_BuildRequest_AttachmentReadError(t *testing.T) {
+	config := &Config{APIKey: "test-key"}
+	provider := NewProvider(config)
+
+	email := &entity.Email{
+		Headers: entity.Headers{
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
+			Subject: "Test with invalid attachment",
+		},
+		TextBody: "Email with invalid attachment",
+		Attachments: []entity.Attachment{
+			{
+				Filename:    "valid.txt",
+				ContentType: "text/plain",
+				Size:        5,
+				Content:     strings.NewReader("valid"),
+			},
+			{
+				Filename:    "invalid.txt",
+				ContentType: "text/plain",
+				Size:        0,
+				Content:     errorReader{},
+			},
+		},
+	}
+
+	request := provider.buildRequest(email)
+
+	// Should only include the valid attachment
+	assert.Len(t, request.Attachments, 1)
+	assert.Equal(t, "valid.txt", request.Attachments[0].Name)
+	expectedContent := base64.StdEncoding.EncodeToString([]byte("valid"))
+	assert.Equal(t, expectedContent, request.Attachments[0].Content)
+}
+
+func TestProvider_Send_WithAttachments(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "POST", r.Method)
+		assert.Equal(t, "/smtp/email", r.URL.Path)
+		
+		// Verify request contains attachment field
+		body := make([]byte, r.ContentLength)
+		_, _ = r.Body.Read(body)
+		bodyStr := string(body)
+		assert.Contains(t, bodyStr, `"attachment"`)
+		assert.Contains(t, bodyStr, `"name":"test.txt"`)
+		assert.Contains(t, bodyStr, `"content"`)
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"messageId": "test-message-id"}`))
+	}))
+	defer server.Close()
+
+	config := &Config{
+		APIKey:  "test-api-key",
+		BaseURL: server.URL,
+		Timeout: 30 * time.Second,
+	}
+	provider := NewProvider(config)
+
+	email := &entity.Email{
+		Headers: entity.Headers{
+			From:    &mail.Address{Address: "sender@example.com"},
+			To:      []*mail.Address{{Address: "recipient@example.com"}},
+			Subject: "Test with attachment",
+		},
+		TextBody: "Email with attachment",
+		Attachments: []entity.Attachment{
+			{
+				Filename:    "test.txt",
+				ContentType: "text/plain",
+				Size:        11,
+				Content:     strings.NewReader("Hello World"),
+			},
+		},
+	}
+
+	err := provider.Send(context.Background(), email)
+	assert.NoError(t, err)
 }

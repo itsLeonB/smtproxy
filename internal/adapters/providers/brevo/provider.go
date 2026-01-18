@@ -3,8 +3,10 @@ package brevo
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 
@@ -155,6 +157,19 @@ func (p *Provider) buildRequest(email *entity.Email) *SendRequest {
 	}
 	if email.TextBody != "" {
 		request.TextContent = email.TextBody
+	}
+
+	// Set attachments
+	for _, attachment := range email.Attachments {
+		content, err := io.ReadAll(attachment.Content)
+		if err != nil {
+			continue // Skip invalid attachments
+		}
+		
+		request.Attachments = append(request.Attachments, Attachment{
+			Name:    attachment.Filename,
+			Content: base64.StdEncoding.EncodeToString(content),
+		})
 	}
 
 	return request

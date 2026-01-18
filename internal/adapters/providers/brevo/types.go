@@ -13,19 +13,26 @@ type Config struct {
 
 // SendRequest represents the Brevo send email request
 type SendRequest struct {
-	Sender      Contact   `json:"sender"`
-	To          []Contact `json:"to"`
-	CC          []Contact `json:"cc,omitempty"`
-	BCC         []Contact `json:"bcc,omitempty"`
-	Subject     string    `json:"subject"`
-	HTMLContent string    `json:"htmlContent,omitempty"`
-	TextContent string    `json:"textContent,omitempty"`
+	Sender      Contact      `json:"sender"`
+	To          []Contact    `json:"to"`
+	CC          []Contact    `json:"cc,omitempty"`
+	BCC         []Contact    `json:"bcc,omitempty"`
+	Subject     string       `json:"subject"`
+	HTMLContent string       `json:"htmlContent,omitempty"`
+	TextContent string       `json:"textContent,omitempty"`
+	Attachments []Attachment `json:"attachment,omitempty"`
 }
 
 // Contact represents an email contact
 type Contact struct {
 	Email string `json:"email"`
 	Name  string `json:"name,omitempty"`
+}
+
+// Attachment represents a Brevo email attachment
+type Attachment struct {
+	Name    string `json:"name"`
+	Content string `json:"content"`
 }
 
 // SendResponse represents the Brevo send email response

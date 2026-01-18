@@ -102,12 +102,12 @@ func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Ema
 
 		if err := p.processPart(part, msg); err != nil {
 			if e := part.Close(); e != nil {
-				logger.Error(err)
+				logger.Error(e)
 			}
 			return err
 		}
 		if e := part.Close(); e != nil {
-			logger.Error(err)
+			logger.Error(e)
 		}
 	}
 

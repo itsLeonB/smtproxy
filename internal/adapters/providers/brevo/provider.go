@@ -61,8 +61,8 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 		return fmt.Errorf("request failed: %w", err)
 	}
 	defer func() {
-		if err = resp.Body.Close(); err != nil {
-			logger.Error(err)
+		if e := resp.Body.Close(); e != nil {
+			logger.Error(e)
 		}
 	}()
 
@@ -95,8 +95,8 @@ func (p *Provider) IsHealthy(ctx context.Context) error {
 		return err
 	}
 	defer func() {
-		if err = resp.Body.Close(); err != nil {
-			logger.Error(err)
+		if e := resp.Body.Close(); e != nil {
+			logger.Error(e)
 		}
 	}()
 

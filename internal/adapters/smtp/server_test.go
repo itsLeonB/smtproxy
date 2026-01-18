@@ -9,8 +9,9 @@ import (
 func TestNewServer(t *testing.T) {
 	addr := ":2525"
 	maxSize := int64(1024)
+	authUsers := map[string]string{"user": "pass"}
 	
-	server := NewServer(addr, maxSize)
+	server := NewServer(addr, maxSize, authUsers, true)
 	
 	assert.NotNil(t, server)
 	assert.Equal(t, addr, server.addr)
@@ -21,8 +22,18 @@ func TestNewServer(t *testing.T) {
 	assert.True(t, server.server.AllowInsecureAuth)
 }
 
+func TestNewServer_NoAuth(t *testing.T) {
+	addr := ":2525"
+	maxSize := int64(1024)
+	
+	server := NewServer(addr, maxSize, nil, false)
+	
+	assert.NotNil(t, server)
+	assert.Equal(t, addr, server.addr)
+}
+
 func TestServer_StartAndShutdown(t *testing.T) {
-	server := NewServer(":0", 1024) // Use port 0 for random available port
+	server := NewServer(":0", 1024, nil, false) // Use port 0 for random available port
 	
 	err := server.Start()
 	assert.NoError(t, err)

@@ -8,14 +8,19 @@ import (
 
 func TestNewBackend(t *testing.T) {
 	maxSize := int64(1024)
-	backend := NewBackend(maxSize)
+	users := map[string]string{"user": "pass"}
+	authHandler := NewAuthHandler(users)
+	
+	backend := NewBackend(maxSize, authHandler, true)
 	
 	assert.NotNil(t, backend)
 	assert.Equal(t, maxSize, backend.maxMessageSize)
+	assert.Equal(t, authHandler, backend.authHandler)
+	assert.True(t, backend.authEnabled)
 }
 
 func TestBackend_NewSession(t *testing.T) {
-	backend := NewBackend(1024)
+	backend := NewBackend(1024, nil, false)
 	session, err := backend.NewSession(nil)
 	
 	assert.NoError(t, err)

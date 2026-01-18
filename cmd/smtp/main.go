@@ -18,13 +18,18 @@ func main() {
 		logger.Fatal(err)
 	}
 
-	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize)
+	authUsers := config.Global.AuthUsers
+	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled)
 
 	if err := server.Start(); err != nil {
 		logger.Fatal(err)
 	}
 
-	logger.Infof("SMTP server started on %s", config.Global.SMTPAddr)
+	if config.Global.AuthEnabled {
+		logger.Infof("SMTP server started on %s with authentication enabled (%d users)", config.Global.SMTPAddr, len(authUsers))
+	} else {
+		logger.Infof("SMTP server started on %s with authentication disabled", config.Global.SMTPAddr)
+	}
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

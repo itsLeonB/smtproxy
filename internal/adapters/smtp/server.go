@@ -15,8 +15,13 @@ type Server struct {
 }
 
 // NewServer creates a new SMTP server
-func NewServer(addr string, maxMessageSize int64) *Server {
-	backend := NewBackend(maxMessageSize)
+func NewServer(addr string, maxMessageSize int64, authUsers map[string]string, authEnabled bool) *Server {
+	var authHandler *AuthHandler
+	if authEnabled && len(authUsers) > 0 {
+		authHandler = NewAuthHandler(authUsers)
+	}
+	
+	backend := NewBackend(maxMessageSize, authHandler, authEnabled)
 	
 	s := smtp.NewServer(backend)
 	s.Addr = addr

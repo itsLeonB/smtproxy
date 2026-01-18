@@ -7,8 +7,105 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestSession_AuthPlain_Success(t *testing.T) {
+	users := map[string]string{"testuser": "testpass"}
+	authHandler := NewAuthHandler(users)
+	session := &Session{
+		authHandler: authHandler,
+		authEnabled: true,
+	}
+	
+	err := session.AuthPlain("testuser", "testpass")
+	assert.NoError(t, err)
+	assert.NotNil(t, session.identity)
+	assert.Equal(t, "testuser", session.identity.Username)
+}
+
+func TestSession_AuthPlain_Disabled(t *testing.T) {
+	session := &Session{authEnabled: false}
+	
+	err := session.AuthPlain("testuser", "testpass")
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication disabled")
+}
+
+func TestSession_Mail_WithAuth(t *testing.T) {
+	session := &Session{
+		authEnabled: true,
+		identity:    NewClientIdentity("testuser"),
+	}
+	
+	err := session.Mail("test@example.com", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "test@example.com", session.from)
+}
+
+func TestSession_Mail_NoAuth(t *testing.T) {
+	session := &Session{authEnabled: true}
+	
+	err := session.Mail("test@example.com", nil)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication required")
+}
+
+func TestSession_Mail_AuthDisabled(t *testing.T) {
+	session := &Session{authEnabled: false}
+	
+	err := session.Mail("test@example.com", nil)
+	assert.NoError(t, err)
+	assert.Equal(t, "test@example.com", session.from)
+}
+
+func TestSession_Rcpt_WithAuth(t *testing.T) {
+	session := &Session{
+		authEnabled: true,
+		identity:    NewClientIdentity("testuser"),
+	}
+	
+	err := session.Rcpt("user@example.com", nil)
+	assert.NoError(t, err)
+	assert.Contains(t, session.to, "user@example.com")
+}
+
+func TestSession_Data_WithAuth(t *testing.T) {
+	session := &Session{
+		from:           "sender@example.com",
+		to:             []string{"recipient@example.com"},
+		maxMessageSize: 1024,
+		authEnabled:    true,
+		identity:       NewClientIdentity("testuser"),
+	}
+	
+	message := strings.NewReader("Subject: Test\n\nHello World")
+	err := session.Data(message)
+	assert.NoError(t, err)
+}
+
+func TestSession_Data_NoAuth(t *testing.T) {
+	session := &Session{
+		from:           "sender@example.com",
+		to:             []string{"recipient@example.com"},
+		maxMessageSize: 1024,
+		authEnabled:    true,
+	}
+	
+	message := strings.NewReader("Subject: Test\n\nHello World")
+	err := session.Data(message)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "authentication required")
+}
+
+func TestSession_GetIdentity(t *testing.T) {
+	identity := NewClientIdentity("testuser")
+	session := &Session{identity: identity}
+	
+	result := session.GetIdentity()
+	assert.Equal(t, identity, result)
+}
+
+// Keep existing tests for backward compatibility
 func TestSession_Mail(t *testing.T) {
-	session := &Session{}
+	session := &Session{authEnabled: false}
 	err := session.Mail("test@example.com", nil)
 	
 	assert.NoError(t, err)
@@ -16,7 +113,7 @@ func TestSession_Mail(t *testing.T) {
 }
 
 func TestSession_Rcpt(t *testing.T) {
-	session := &Session{}
+	session := &Session{authEnabled: false}
 	
 	err := session.Rcpt("user1@example.com", nil)
 	assert.NoError(t, err)
@@ -34,6 +131,7 @@ func TestSession_Data_Success(t *testing.T) {
 		from:           "sender@example.com",
 		to:             []string{"recipient@example.com"},
 		maxMessageSize: 1024,
+		authEnabled:    false,
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")
@@ -46,6 +144,7 @@ func TestSession_Data_NoSender(t *testing.T) {
 	session := &Session{
 		to:             []string{"recipient@example.com"},
 		maxMessageSize: 1024,
+		authEnabled:    false,
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")
@@ -59,6 +158,7 @@ func TestSession_Data_NoRecipients(t *testing.T) {
 	session := &Session{
 		from:           "sender@example.com",
 		maxMessageSize: 1024,
+		authEnabled:    false,
 	}
 	
 	message := strings.NewReader("Subject: Test\n\nHello World")

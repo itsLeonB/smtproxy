@@ -101,8 +101,11 @@ nano .env
 |----------|---------|-------------|
 | `AUTH_ENABLED` | `true` | Enable SMTP authentication |
 | `AUTH_USERS` | `user1:pass1,user2:pass2` | Comma-separated user:password pairs |
+| `ALLOW_INSECURE_AUTH` | `false` | Allow plaintext authentication without TLS |
 
 **Note for Rails/Apps:** If your application uses empty username/password for SMTP, set `AUTH_ENABLED=false` to allow anonymous authentication.
+
+**Security Note:** `ALLOW_INSECURE_AUTH=true` permits plaintext credentials over unencrypted connections. Only enable for development or when using TLS termination at a proxy level.
 
 ### Provider Configuration
 

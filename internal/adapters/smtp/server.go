@@ -50,11 +50,11 @@ func Setup() (*Server, error) {
 		}
 	}
 
-	return NewServer(config.Global.SMTPPort, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry), nil
+	return NewServer(config.Global.SMTPPort, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, config.Global.AllowInsecureAuth, registry), nil
 }
 
 // NewServer creates a new SMTP server
-func NewServer(port string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, registry *provider.Registry) *Server {
+func NewServer(port string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, allowInsecureAuth bool, registry *provider.Registry) *Server {
 	var authHandler *AuthHandler
 	if authEnabled && len(authUsers) > 0 {
 		authHandler = NewAuthHandler(authUsers)
@@ -66,7 +66,7 @@ func NewServer(port string, maxMessageSize int64, authUsers map[string]string, a
 	s.Addr = ":" + port
 	s.Domain = "localhost"
 	s.MaxMessageBytes = maxMessageSize
-	s.AllowInsecureAuth = true
+	s.AllowInsecureAuth = allowInsecureAuth
 
 	return &Server{
 		server: s,

@@ -42,7 +42,7 @@ go build -o bin/smtproxy ./cmd/smtp
 ./bin/smtproxy
 
 # Configure via environment variables
-export SMTP_ADDR=":2525"
+export SMTP_PORT="2525"
 export AUTH_USERS="user1:pass1,user2:pass2"
 export BREVO_API_KEY="your-brevo-api-key"
 ./bin/smtproxy
@@ -92,7 +92,7 @@ nano .env
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LOG_LEVEL` | `info` | Log level (debug, info, warn, error) |
-| `SMTP_ADDR` | `:2525` | SMTP server listen address |
+| `SMTP_PORT` | `2525` | SMTP server listen port |
 | `MAX_MESSAGE_SIZE` | `10485760` | Maximum message size in bytes (10MB) |
 
 ### Authentication
@@ -234,7 +234,7 @@ WorkingDirectory=/opt/smtproxy
 ExecStart=/opt/smtproxy/bin/smtproxy
 Restart=always
 RestartSec=5
-Environment=SMTP_ADDR=:2525
+Environment=SMTP_PORT=2525
 Environment=BREVO_API_KEY=your-api-key
 
 [Install]
@@ -246,7 +246,7 @@ WantedBy=multi-user.target
 ```bash
 # .env
 LOG_LEVEL=info
-SMTP_ADDR=:2525
+SMTP_PORT=2525
 MAX_MESSAGE_SIZE=10485760
 AUTH_ENABLED=true
 AUTH_USERS=user1:pass1,user2:pass2

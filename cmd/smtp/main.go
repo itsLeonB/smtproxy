@@ -55,16 +55,16 @@ func main() {
 		}
 	}
 
-	server := smtp.NewServer(config.Global.SMTPAddr, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry, logger.Global)
+	server := smtp.NewServer(config.Global.SMTPPort, config.Global.MaxSize, authUsers, config.Global.AuthEnabled, registry, logger.Global)
 
 	if err := server.Start(); err != nil {
 		logger.Fatal(err)
 	}
 
 	if config.Global.AuthEnabled {
-		logger.Infof("SMTP server started on %s with authentication enabled (%d users)", config.Global.SMTPAddr, len(authUsers))
+		logger.Infof("SMTP server started on :%s with authentication enabled (%d users)", config.Global.SMTPPort, len(authUsers))
 	} else {
-		logger.Infof("SMTP server started on %s with authentication disabled", config.Global.SMTPAddr)
+		logger.Infof("SMTP server started on :%s with authentication disabled", config.Global.SMTPPort)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())

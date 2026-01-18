@@ -17,23 +17,23 @@ type Server struct {
 }
 
 // NewServer creates a new SMTP server
-func NewServer(addr string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, registry *provider.Registry, logger ezutil.Logger) *Server {
+func NewServer(port string, maxMessageSize int64, authUsers map[string]string, authEnabled bool, registry *provider.Registry, logger ezutil.Logger) *Server {
 	var authHandler *AuthHandler
 	if authEnabled && len(authUsers) > 0 {
 		authHandler = NewAuthHandler(authUsers)
 	}
-	
+
 	backend := NewBackend(maxMessageSize, authHandler, authEnabled, registry, logger)
-	
+
 	s := smtp.NewServer(backend)
-	s.Addr = addr
+	s.Addr = ":" + port
 	s.Domain = "localhost"
 	s.MaxMessageBytes = maxMessageSize
 	s.AllowInsecureAuth = true
 
 	return &Server{
 		server: s,
-		addr:   addr,
+		addr:   s.Addr,
 	}
 }
 

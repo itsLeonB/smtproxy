@@ -34,8 +34,10 @@ func TestConfig_AuthUsers_EnvParsing(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// Set environment variable
-			os.Setenv("AUTH_USERS", tt.envValue)
-			defer os.Unsetenv("AUTH_USERS")
+			_ = os.Setenv("AUTH_USERS", tt.envValue)
+			defer func() {
+				_ = os.Unsetenv("AUTH_USERS")
+			}()
 
 			var cfg Config
 			err := envconfig.Process("", &cfg)

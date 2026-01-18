@@ -8,6 +8,7 @@ import (
 	"net/mail"
 	"strings"
 
+	"github.com/itsLeonB/smtproxy/internal/core/logger"
 	"github.com/itsLeonB/smtproxy/internal/domain/entity"
 )
 
@@ -25,7 +26,7 @@ func New(maxSize int64) *Parser {
 func (p *Parser) Parse(r io.Reader) (*entity.Email, error) {
 	// Limit reader to prevent memory exhaustion
 	lr := io.LimitReader(r, p.maxSize)
-	
+
 	// Parse message
 	msg, err := mail.ReadMessage(lr)
 	if err != nil {
@@ -34,11 +35,11 @@ func (p *Parser) Parse(r io.Reader) (*entity.Email, error) {
 
 	// Extract headers
 	headers := p.parseHeaders(msg.Header)
-	
+
 	// Parse body based on content type
 	contentType := msg.Header.Get("Content-Type")
 	mediaType, params, _ := mime.ParseMediaType(contentType)
-	
+
 	parsedEmail := &entity.Email{
 		Headers: headers,
 	}
@@ -89,7 +90,7 @@ func (p *Parser) parseHeaders(h mail.Header) entity.Headers {
 // parseMultipart handles multipart MIME messages
 func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Email) error {
 	mr := multipart.NewReader(body, boundary)
-	
+
 	for {
 		part, err := mr.NextPart()
 		if err == io.EOF {
@@ -100,10 +101,14 @@ func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Ema
 		}
 
 		if err := p.processPart(part, msg); err != nil {
-			part.Close()
+			if e := part.Close(); e != nil {
+				logger.Error(err)
+			}
 			return err
 		}
-		part.Close()
+		if e := part.Close(); e != nil {
+			logger.Error(err)
+		}
 	}
 
 	return nil
@@ -113,7 +118,7 @@ func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Ema
 func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	contentType := part.Header.Get("Content-Type")
 	mediaType, _, _ := mime.ParseMediaType(contentType)
-	
+
 	disposition := part.Header.Get("Content-Disposition")
 	dispType, dispParams, _ := mime.ParseMediaType(disposition)
 
@@ -228,10 +233,10 @@ func (p *Parser) parseAddressList(addresses string) []string {
 // isStandardHeader checks if header is a standard email header
 func (p *Parser) isStandardHeader(key string) bool {
 	standard := []string{
-		"From", "To", "CC", "BCC", "Subject", "Date", 
+		"From", "To", "CC", "BCC", "Subject", "Date",
 		"Message-ID", "Content-Type", "Content-Disposition",
 	}
-	
+
 	key = strings.ToLower(key)
 	for _, std := range standard {
 		if strings.ToLower(std) == key {

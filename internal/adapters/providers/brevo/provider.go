@@ -62,7 +62,7 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			logger.Fatal(err)
+			logger.Error(err)
 		}
 	}()
 
@@ -96,7 +96,7 @@ func (p *Provider) IsHealthy(ctx context.Context) error {
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
-			logger.Fatal(err)
+			logger.Error(err)
 		}
 	}()
 

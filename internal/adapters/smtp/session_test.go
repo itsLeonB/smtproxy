@@ -26,8 +26,20 @@ func TestSession_AuthPlain_Disabled(t *testing.T) {
 	session := &Session{authEnabled: false}
 	
 	err := session.AuthPlain("testuser", "testpass")
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "authentication disabled")
+	assert.NoError(t, err)
+	assert.NotNil(t, session.identity)
+	assert.Equal(t, "anonymous", session.identity.Username)
+	assert.True(t, session.identity.IsAuthenticated())
+}
+
+func TestSession_AuthLogin_Disabled(t *testing.T) {
+	session := &Session{authEnabled: false}
+	
+	err := session.AuthLogin("testuser", "testpass")
+	assert.NoError(t, err)
+	assert.NotNil(t, session.identity)
+	assert.Equal(t, "anonymous", session.identity.Username)
+	assert.True(t, session.identity.IsAuthenticated())
 }
 
 func TestSession_Mail_WithAuth(t *testing.T) {

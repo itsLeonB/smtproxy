@@ -26,7 +26,9 @@ type Session struct {
 // AuthPlain handles AUTH PLAIN authentication
 func (s *Session) AuthPlain(username, password string) error {
 	if !s.authEnabled {
-		return errors.New("authentication disabled")
+		// Allow anonymous authentication when auth is disabled
+		s.identity = NewClientIdentity("anonymous")
+		return nil
 	}
 	
 	if s.authHandler == nil {
@@ -44,7 +46,9 @@ func (s *Session) AuthPlain(username, password string) error {
 // AuthLogin handles AUTH LOGIN authentication
 func (s *Session) AuthLogin(username, password string) error {
 	if !s.authEnabled {
-		return errors.New("authentication disabled")
+		// Allow anonymous authentication when auth is disabled
+		s.identity = NewClientIdentity("anonymous")
+		return nil
 	}
 	
 	if s.authHandler == nil {

@@ -102,6 +102,8 @@ nano .env
 | `AUTH_ENABLED` | `true` | Enable SMTP authentication |
 | `AUTH_USERS` | `user1:pass1,user2:pass2` | Comma-separated user:password pairs |
 
+**Note for Rails/Apps:** If your application uses empty username/password for SMTP, set `AUTH_ENABLED=false` to allow anonymous authentication.
+
 ### Provider Configuration
 
 | Variable | Default | Description |

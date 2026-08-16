@@ -1,12 +1,14 @@
 package smtp
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 
 	"github.com/emersion/go-smtp"
+	"github.com/itsLeonB/smtproxy/internal/core/logger"
 	"github.com/itsLeonB/smtproxy/internal/domain/entity"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/dispatcher"
 	"github.com/itsLeonB/smtproxy/internal/domain/service/parser"
@@ -104,8 +106,10 @@ func (s *Session) Data(r io.Reader) error {
 		bytesRead: 0,
 	}
 
-	// Parse email using the MIME parser
-	parsedEmail, err := s.parser.Parse(limitedReader)
+	// Parse email using the MIME parser, teeing the raw bytes for debug logging
+	var raw bytes.Buffer
+	parsedEmail, err := s.parser.Parse(io.TeeReader(limitedReader, &raw))
+	logger.Debugf("smtp DATA received from=%s to=%v bytes=%d payload=%s", s.from, s.to, raw.Len(), raw.String())
 	if err != nil {
 		return err
 	}

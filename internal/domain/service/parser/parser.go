@@ -119,7 +119,7 @@ func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Ema
 // processPart handles individual MIME parts
 func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	contentType := part.Header.Get("Content-Type")
-	mediaType, _, _ := mime.ParseMediaType(contentType)
+	mediaType, mtParams, _ := mime.ParseMediaType(contentType)
 
 	disposition := part.Header.Get("Content-Disposition")
 	dispType, dispParams, _ := mime.ParseMediaType(disposition)
@@ -132,22 +132,22 @@ func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	}
 
 	// Handle body content
-	switch mediaType {
-	case "text/plain":
+	switch {
+	case mediaType == "text/plain":
 		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
 		msg.TextBody = string(content)
-	case "text/html":
+	case mediaType == "text/html":
 		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
 		msg.HTMLBody = string(content)
-	case "multipart/alternative", "multipart/mixed":
-		// Nested multipart - would need recursive handling
-		// For minimal implementation, skip
+	case strings.HasPrefix(mediaType, "multipart/"):
+		// Nested multipart (e.g. multipart/mixed wrapping multipart/alternative) - recurse
+		return p.parseMultipart(part, mtParams["boundary"], msg)
 	}
 
 	return nil

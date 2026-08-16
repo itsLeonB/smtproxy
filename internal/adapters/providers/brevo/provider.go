@@ -46,6 +46,8 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
+	logger.Debugf("brevo request payload: %s", string(payload))
+
 	// Create HTTP request
 	url := p.config.BaseURL + "/smtp/email"
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, bytes.NewBuffer(payload))
@@ -68,6 +70,13 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 		}
 	}()
 
+	// Read response body once so it can be logged regardless of status code
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("failed to read response body: %w", err)
+	}
+	logger.Debugf("brevo response status=%d body=%s", resp.StatusCode, string(respBody))
+
 	// Handle response
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
@@ -75,7 +84,7 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 
 	// Parse error response
 	var errorResp ErrorResponse
-	if err := json.NewDecoder(resp.Body).Decode(&errorResp); err != nil {
+	if err := json.Unmarshal(respBody, &errorResp); err != nil {
 		return fmt.Errorf("HTTP %d: failed to parse error response", resp.StatusCode)
 	}
 

@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net/mail"
+	"path/filepath"
 	"strings"
 
 	"github.com/itsLeonB/smtproxy/internal/core/logger"
@@ -119,7 +120,7 @@ func (p *Parser) parseMultipart(body io.Reader, boundary string, msg *entity.Ema
 // processPart handles individual MIME parts
 func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	contentType := part.Header.Get("Content-Type")
-	mediaType, _, _ := mime.ParseMediaType(contentType)
+	mediaType, mtParams, _ := mime.ParseMediaType(contentType)
 
 	disposition := part.Header.Get("Content-Disposition")
 	dispType, dispParams, _ := mime.ParseMediaType(disposition)
@@ -132,22 +133,22 @@ func (p *Parser) processPart(part *multipart.Part, msg *entity.Email) error {
 	}
 
 	// Handle body content
-	switch mediaType {
-	case "text/plain":
+	switch {
+	case mediaType == "text/plain":
 		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
 		msg.TextBody = string(content)
-	case "text/html":
+	case mediaType == "text/html":
 		content, err := p.decodeContent(part, encoding)
 		if err != nil {
 			return err
 		}
 		msg.HTMLBody = string(content)
-	case "multipart/alternative", "multipart/mixed":
-		// Nested multipart - would need recursive handling
-		// For minimal implementation, skip
+	case strings.HasPrefix(mediaType, "multipart/"):
+		// Nested multipart (e.g. multipart/mixed wrapping multipart/alternative) - recurse
+		return p.parseMultipart(part, mtParams["boundary"], msg)
 	}
 
 	return nil
@@ -162,6 +163,7 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 
 	// Decode filename if encoded
 	filename = p.decodeHeader(filename)
+	filename = ensureExtension(filename, part.Header.Get("Content-Type"))
 
 	// Read content into buffer for size calculation
 	content, err := p.decodeContent(part, encoding)
@@ -178,6 +180,28 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 
 	msg.Attachments = append(msg.Attachments, attachment)
 	return nil
+}
+
+// ensureExtension appends a file extension guessed from contentType if
+// filename doesn't already have one. Some MUAs (e.g. inline images) send
+// filename="inline" with no extension, which providers like Brevo reject
+// since they detect file format from the name.
+func ensureExtension(filename, contentType string) string {
+	if filepath.Ext(filename) != "" {
+		return filename
+	}
+
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return filename
+	}
+
+	exts, err := mime.ExtensionsByType(mediaType)
+	if err != nil || len(exts) == 0 {
+		return filename
+	}
+
+	return filename + exts[0]
 }
 
 // parseSinglePart handles non-multipart messages

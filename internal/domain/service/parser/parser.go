@@ -8,6 +8,7 @@ import (
 	"mime/multipart"
 	"mime/quotedprintable"
 	"net/mail"
+	"path/filepath"
 	"strings"
 
 	"github.com/itsLeonB/smtproxy/internal/core/logger"
@@ -162,6 +163,7 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 
 	// Decode filename if encoded
 	filename = p.decodeHeader(filename)
+	filename = ensureExtension(filename, part.Header.Get("Content-Type"))
 
 	// Read content into buffer for size calculation
 	content, err := p.decodeContent(part, encoding)
@@ -178,6 +180,28 @@ func (p *Parser) processAttachment(part *multipart.Part, msg *entity.Email, para
 
 	msg.Attachments = append(msg.Attachments, attachment)
 	return nil
+}
+
+// ensureExtension appends a file extension guessed from contentType if
+// filename doesn't already have one. Some MUAs (e.g. inline images) send
+// filename="inline" with no extension, which providers like Brevo reject
+// since they detect file format from the name.
+func ensureExtension(filename, contentType string) string {
+	if filepath.Ext(filename) != "" {
+		return filename
+	}
+
+	mediaType, _, err := mime.ParseMediaType(contentType)
+	if err != nil {
+		return filename
+	}
+
+	exts, err := mime.ExtensionsByType(mediaType)
+	if err != nil || len(exts) == 0 {
+		return filename
+	}
+
+	return filename + exts[0]
 }
 
 // parseSinglePart handles non-multipart messages

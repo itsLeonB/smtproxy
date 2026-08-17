@@ -305,3 +305,31 @@ Attachment content
 	assert.Len(t, email.Attachments, 1)
 	assert.Equal(t, "notes.txt", email.Attachments[0].Filename)
 }
+
+func TestParser_ParseInlineImageWithoutExtension(t *testing.T) {
+	rawEmail := `From: sender@example.com
+To: recipient@example.com
+Subject: Inline Image Without Extension Test
+Content-Type: multipart/related; boundary="outer"
+
+--outer
+Content-Type: text/html
+
+<html><body><img src="cid:abc123"></body></html>
+--outer
+Content-Type: image/png; name=inline
+Content-Transfer-Encoding: base64
+Content-Disposition: inline; filename=inline
+Content-ID: <abc123>
+
+aGVsbG8=
+--outer--`
+
+	parser := New(1024 * 1024)
+	email, err := parser.Parse(strings.NewReader(rawEmail))
+
+	assert.NoError(t, err)
+	assert.NotNil(t, email)
+	assert.Len(t, email.Attachments, 1)
+	assert.Equal(t, "inline.png", email.Attachments[0].Filename)
+}

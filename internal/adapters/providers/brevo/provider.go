@@ -14,6 +14,24 @@ import (
 	"github.com/itsLeonB/smtproxy/internal/domain/entity"
 )
 
+const (
+	// maxResponseBodySize caps how much of Brevo's response we'll buffer
+	// into memory; Brevo responses are small JSON bodies, so anything
+	// larger indicates a misbehaving/malicious server.
+	maxResponseBodySize = 1 << 20 // 1MB
+	// responseLogPreviewSize bounds how much of the response body is
+	// included in debug logs.
+	responseLogPreviewSize = 500
+)
+
+// previewBody returns a bounded preview of a response body suitable for logging.
+func previewBody(body []byte) string {
+	if len(body) <= responseLogPreviewSize {
+		return string(body)
+	}
+	return string(body[:responseLogPreviewSize]) + "...(truncated)"
+}
+
 // Provider implements the Brevo email provider
 type Provider struct {
 	config *Config
@@ -46,7 +64,8 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 		return fmt.Errorf("failed to marshal request: %w", err)
 	}
 
-	logger.Debugf("brevo request payload: %s", string(payload))
+	logger.Debugf("brevo request built: to=%d cc=%d bcc=%d attachments=%d payload_bytes=%d",
+		len(request.To), len(request.CC), len(request.BCC), len(request.Attachments), len(payload))
 
 	// Create HTTP request
 	url := p.config.BaseURL + "/smtp/email"
@@ -70,12 +89,17 @@ func (p *Provider) Send(ctx context.Context, email *entity.Email) error {
 		}
 	}()
 
-	// Read response body once so it can be logged regardless of status code
-	respBody, err := io.ReadAll(resp.Body)
+	// Read response body once so it can be parsed regardless of status code.
+	// Cap at maxResponseBodySize+1 to detect and reject oversized responses
+	// without buffering unbounded data into memory.
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBodySize+1))
 	if err != nil {
 		return fmt.Errorf("failed to read response body: %w", err)
 	}
-	logger.Debugf("brevo response status=%d body=%s", resp.StatusCode, string(respBody))
+	if len(respBody) > maxResponseBodySize {
+		return fmt.Errorf("brevo response body exceeds maximum allowed size of %d bytes", maxResponseBodySize)
+	}
+	logger.Debugf("brevo response status=%d body_bytes=%d preview=%s", resp.StatusCode, len(respBody), previewBody(respBody))
 
 	// Handle response
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
